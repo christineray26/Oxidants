@@ -80,6 +80,8 @@ def buildup(t, t_del, rO2):
 t_plot = np.arange(-4.500, 0.001, 0.001)
 t = np.arange(0, 4.501, 0.001) * 10**9 
 t_step = t[1] - t[0] 
+N = len(t)
+
 
 #Shorter timescale
 #t_plot = np.arange(0, 1, 0.001)
@@ -124,81 +126,96 @@ plt.subplots_adjust(left=0.12, right=0.93, top=0.8, bottom=0.15)
 plt.grid()
 #plt.savefig('TotalO2_SurfaceRad.png')
 
+#What happens if we vary the ice shell thickness?
+rshell_range = np.array([2, 10, 20, 100, 1000])
+tdel_shellrange = rshell_range/(SF_up * 10**-3)
 
-#Potassium Decay in the Ocean
-#Chris's method
+O2shell_range = np.zeros([5, len(t)])
+for i in range(0,5):
+    O2shell_range[i] = buildup(t, tdel_shellrange[i], rO2_ice)
+
+fig3 = plt.figure(3)
+fig3.set_figheight(6.5)
+fig3.set_figwidth(11)
+plt.clf()
+plt.plot(t_plot, zero_to_nan(O2shell_range[0]), label = ('Ice Thickness = 2km'))
+plt.plot(t_plot, zero_to_nan(O2shell_range[1]), label = ('Ice Thickness = 10km'))
+plt.plot(t_plot, zero_to_nan(O2_ice), label = ('Ice Thickness = 12.5km'))
+plt.plot(t_plot, zero_to_nan(O2shell_range[2]), label = ('Ice Thickness = 20km'))
+plt.plot(t_plot, zero_to_nan(O2shell_range[3]), label = ('Ice Thickness = 100km'))
+plt.plot(t_plot, zero_to_nan(O2shell_range[4]), label = ('Ice Thickness = 1000km'))
+#plt.plot([t_delupplot, t_delupplot], [10**11, 10**17], 'k--') 
+#plt.text(-3.9, 10**12.1, 'Europa delivery period \ncutoff from Hand (2007)', fontsize = 12)
+#plt.plot(t_plot, zero_to_nan(O2_icerange[4]), label = ('Snowfall rate = 1.0 mm/yr'))
+plt.yscale('symlog')
+plt.xlabel('Time from Current Epoch (Gyr)')
+plt.ylabel('Mol $O_{2}$')
+plt.xlim(-4.5, 0)
+plt.ylim(10**12, 10**17.001)
+plt.title(r"Total amount of $O_{2}$ available from surface radiolysis") 
+plt.legend(bbox_to_anchor=(1,0.5), prop={'size': 14})
+plt.subplots_adjust(left=0.12, right=0.93, top=0.8, bottom=0.15)
+plt.grid()
+plt.savefig('TotalO2_SurfaceRadShellVary.png')
+
+#Potassium Decay in the Ocean 
+
+#From Draganic et al:
 lambda_K = 5.4 * 10**-10 #yr^-1
 N_A = 6.022*10**23
 M_ocean = 10**19 #kg
 
-#Calculate K40 concentration 4.5 Gyr ago (K40_0) and as a function of time (K40)
-K_conc = 1.0 * 10**-3 #mol/kg H2O
-K40_frac = 1.17 * 10**-4
-K40_now = K_conc * K40_frac #mol K/kg H2O
-K40_conc = 0.00145 * K_conc ##need to ask chris why N_0's don't match
-
-K40_0 = (K40_now * M_ocean) * np.exp(lambda_K * 4.5*10**9) * N_A #mol/kg H2O * kg H2O * atoms/mol = atoms total
-K40 = K40_0 * np.exp(-lambda_K * t) #atoms
-
-#From Draganic et al:
 M_D = 1.4 * 10**21 #kg
-rH2_D = (3.8 * 10**18)/(2.016 * 100 * 10**6 * M_D) #mol/(kg H2O yr)
+rH2_D = (3.8 * 10**18)/(2.016 * 100 * 10**6 * M_D)
 rO2_D = (3.0 * 10**19)/(32.02 * 100 * 10**6 * M_D)
 rH2O2_D = (1.1 * 10**18)/(34.015 * 100 * 10**6 * M_D)
 
-K40_D = (6 * 10**18)/N_A #mol/(kg H2O)
+K40_D = (6 * 10**18)/N_A
 
 kH2 = rH2_D/K40_D #yr^-1
 kO2 = rO2_D/K40_D
 kH2O2 = rH2O2_D/K40_D
 kH2C = 2*kO2 + kH2O2
 
+#Calculate K40 concentration 4.5 Gyr ago (K40_0) and as a function of time (K40)
+K_conc = 1.0 * 10**-3 #mol/kg H2O
+K40_frac = 1.17 * 10**-4
+K40_now = K_conc * K40_frac #mol K/kg H2O
+#K40_conc = 0.00145 * K_conc ##need to ask chris why N_0's don't match
 
-def conc(k , K, t, t_step): 
-    rate = k*(K/N_A)
-    N = len(t)
-    concentration = np.zeros(N)
-    for i in range (0, N):
-        if i == 0:
-            concentration[i] = 0.0
-        else:
-            concentration[i] = rate[i-1] * t_step + concentration[i-1]
-    return rate, concentration
-    
-rH2, H2D = conc(kH2, K40, t, t_step) #mol
-rH2C, H2DC = conc(kH2C, K40, t, t_step)
-rO2_K40, O2_K40 = conc(kO2, K40, t, t_step)
-rH2O2, H2O2 = conc(kH2O2, K40, t, t_step)  
+K40_0 = (K40_now * M_ocean) * np.exp(lambda_K * 4.5*10**9) * N_A #mol/kg H2O * kg H2O * atoms/mol = atoms total
+K40 = K40_0 * np.exp(-lambda_K * t)
 
+ 
+rH2_K, H2_K, rO2_K, O2_K, rH2O2_K, H2O2_K = np.loadtxt('O2Potassium.txt', delimiter = ',', skiprows = 1, unpack = 'true') 
 
-fig3 = plt.figure(3)
-fig3.set_figheight(6.5)
-fig3.set_figwidth(11)
-plt.clf()
+#fig3 = plt.figure(3)
+#fig3.set_figheight(6.5)
+#fig3.set_figwidth(11)
+#plt.clf()
 #plt.plot(t_plot, O2D, 'b-')
-plt.xlabel('Time from Current Epoch (Gyr)')
-plt.ylabel('Mol $O_{2}$')
-plt.xlim(-4.5, 0)
-plt.title(r"Total amount of $O_{2}$ available from $^{40}K$ decay in ocean")
-plt.subplots_adjust(left=0.12, right=0.93, top=0.8, bottom=0.15)
-plt.grid()
+#plt.xlabel('Time from Current Epoch (Gyr)')
+#plt.ylabel('Mol $O_{2}$')
+#plt.xlim(-4.5, 0)
+#plt.title(r"Total amount of $O_{2}$ available from $^{40}K$ decay in ocean")
+#plt.subplots_adjust(left=0.12, right=0.93, top=0.8, bottom=0.15)
+#plt.grid()
 #plt.savefig('TotalO2_K40Decay.png')
 
 #Now lets look at the actual rate
-rate_decay = (kO2*(K40_0/(N_A*M_ocean)))*np.exp(-lambda_K*t)
-rO2_icet = np.zeros(len(rO2_K40))
+rO2_icet = np.zeros(N)
 for i in range (0, len(t)):
     if t[i] <= t_del:
         rO2_icet[i] = 0.0
     else:
         rO2_icet[i] = rO2_ice
-rO2_total = rO2_icet + rO2_K40
+rO2_total = rO2_icet + rO2_K
 
 fig4 = plt.figure(4)
 fig4.set_figheight(6.5)
 fig4.set_figwidth(9)
 plt.clf()
-plt.plot(t_plot, rO2_K40, 'b-', label = '$^{40}K$ Decay')
+plt.plot(t_plot, rO2_K, 'b-', label = '$^{40}K$ Decay')
 plt.plot([-4.475, 0.0], [rO2_ice, rO2_ice], 'k-', label = 'Ice Shell')
 plt.plot(t_plot, rO2_total, label = 'Total')
 plt.plot
@@ -214,13 +231,13 @@ plt.grid()
 
 
 #Compare O2 from SF vs 40K
-O2_total = O2_ice + O2_K40
+O2_total = O2_ice + O2_K
 
 fig5 = plt.figure(5)
 fig5.set_figheight(6.5)
 fig5.set_figwidth(9)
 plt.clf()
-plt.plot(t_plot, O2_K40, 'b-', label = '$^{40}K$ Decay')
+plt.plot(t_plot, O2_K, 'b-', label = '$^{40}K$ Decay')
 plt.plot(t_plot, O2_ice, 'k-', label = 'Ice Shell')
 plt.plot(t_plot, O2_total, label = 'Total')
 plt.xlabel('Time from Current Epoch (Gyr)')
@@ -238,7 +255,7 @@ fig6 = plt.figure(6)
 fig6.set_figheight(6.5)
 fig6.set_figwidth(11)
 plt.clf()
-plt.plot(t_plot, O2_K40, 'b-', label = '$^{40}K$ Decay')
+plt.plot(t_plot, O2_K, 'b-', label = '$^{40}K$ Decay')
 plt.plot(t_plot, O2_ice, 'k-', label = 'Ice Shell')
 plt.xlabel('Total Elapsed Time (Myr)')
 plt.ylabel('Mol $O_{2}$')
@@ -254,14 +271,14 @@ plt.grid()
 ###Oxygen Sinks###
 
 #OCEAN#
-#pH = np.array([8, 9, 10, 11, 12])
-pH = 9.0
+pH = np.array([8, 9, 10, 11])
+#pH = 9.0
 pOH = 14.94 - pH #for 0 deg C and 1 bar
 OH = 10.0**(-pOH)
 I = 0.1
 T = 278
 
-###Reaction 1: 4Fe(II) + O2 + 4H+ = 4Fe(III) + 2H2O###
+###Reaction 1: 4Fe(II) + O2 + 6H2O = 4FeOOH + 2H+###
 #k1 = (10**(14.3))*(60*24*365) #table 7 in Millero, 1987 
 log_k1 = 21.56 - (1545/T) - 3.29*np.sqrt(I) + 1.52*I #from eqn 31 in Millero 1986
 k1 = (10**log_k1)*(60*24*365)
@@ -272,7 +289,7 @@ Fe2 = 10**-8.0
 
 ###Reaction 2: H2S + 2O2 = SO4 + 2H+ ###
 #k2 = (10**(1.13))*(60*24*365) #minutes I hope???
-log_k2 = 10.50 + 0.16*pH - ((3.0*10**3)/T) + 0.44*np.sqrt(I) #from eqn 13 in Millero 1987
+log_k2 = 11.78 - ((3*10**3)/T) + 0.44*np.sqrt(I) #from eqn 13 in Millero 1987
 k2 = (10**log_k2)*(60*24*365)
 
 #Ask Chris what iron concentration range is appropriate
@@ -315,60 +332,58 @@ plt.grid()
 
 
 #Start by integrating over the initial delivery period where rO2_ice = 0
-
 C = kO2*(K40_0/(N_A*M_ocean))
 
-t_O2 = np.arange(0.0, 1.0, 0.000001)
-O2_del = (C/(B - lambda_K)) * (np.exp(-lambda_K*t_O2) - np.exp(-B*t_O2))
+#t_O2 = np.arange(0.0, 1.0, 0.000001)
+#O2_del = (C/(B - lambda_K)) * (np.exp(-lambda_K*t_O2) - np.exp(-B*t_O2))
 
-fig8 = plt.figure(8)
-fig8.set_figheight(6.5)
-fig8.set_figwidth(9)
-plt.clf()
-plt.plot(t_O2, O2_del, 'b-')
-plt.xlabel('Time (Years)')
-plt.ylabel('$O_{2}$ Concentration (mol/kg $H_{2}O$)')
-plt.xlim(0.0, 1.0)
-plt.ylim(0.0, 4.0*10**-14)
-plt.title(r"Total $O_{2}$ Concentration in the Ocean in the First Year")
-plt.legend(bbox_to_anchor=(1,1),prop={'size': 15})
-plt.subplots_adjust(left=0.12, right=0.9, top=0.8, bottom=0.15)
-plt.grid()
+#fig8 = plt.figure(8)
+#fig8.set_figheight(6.5)
+#fig8.set_figwidth(9)
+#plt.clf()
+#plt.plot(t_O2, O2_del, 'b-')
+#plt.xlabel('Time (Years)')
+#plt.ylabel('$O_{2}$ Concentration (mol/kg $H_{2}O$)')
+#plt.xlim(0.0, 1.0)
+#plt.ylim(0.0, 4.0*10**-14)
+#plt.title(r"Total $O_{2}$ Concentration in the Ocean in the First Year")
+#plt.legend(bbox_to_anchor=(1,1),prop={'size': 15})
+#plt.subplots_adjust(left=0.12, right=0.9, top=0.8, bottom=0.15)
+#plt.grid()
 #plt.savefig('O2Conc_1yr.png')
 
 #Now let's try to solve the ODE numerically
 #1 Year after t = 2.5 x 10^7
 #Calculate the concentration at 2.5 x 10^7 years to start numerical integration
-start = len(t_O2)
-O2_0 = O2_del[start-1]
-t_int = np.arange(2.5, 2.5000001, 0.000000001)*10**7
-t_intstep = t_int[1]-t_int[0]
+#start = len(t_O2)
+#O2_0 = O2_del[start-1]
+#t_int = np.arange(2.5, 2.5000001, 0.000000001)*10**7
+#t_intstep = t_int[1]-t_int[0]
+#O2_conc = np.zeros(len(t_int))
+#dO2_dt = np.zeros(len(t_int))
 
-O2_conc = np.zeros(len(t_int))
-dO2_dt = np.zeros(len(t_int))
-
-for i in range(0, len(t_int)):
-    if i == 0:
-        O2_conc[i] = O2_0
-        dO2_dt[i] = A + C*np.exp(-lambda_K*t_int[i]) - B*O2_0
-    else:
-        O2_conc[i] = dO2_dt[i-1]*t_intstep + O2_conc[i-1]
-        dO2_dt[i] = A + C*np.exp(-lambda_K*t_int[i]) - B*O2_conc[i-1]
+#for i in range(0, len(t_int)):
+#    if i == 0:
+#        O2_conc[i] = O2_0
+#        dO2_dt[i] = A + C*np.exp(-lambda_K*t_int[i]) - B*O2_0
+#    else:
+#        O2_conc[i] = dO2_dt[i-1]*t_intstep + O2_conc[i-1]
+#        dO2_dt[i] = A + C*np.exp(-lambda_K*t_int[i]) - B*O2_conc[i-1]
      
         
-fig9 = plt.figure(9)
-fig9.set_figheight(6.5)
-fig9.set_figwidth(9)
-plt.clf()
-plt.plot(t_int, O2_conc, 'b-')
-plt.xlabel('Time (Years)')
-plt.ylabel('$O_{2}$ Concentration (mol/kg $H_{2}O$)')
-plt.xlim(2.5*10**7, 2.5000001*10**7)
+#fig9 = plt.figure(9)
+#fig9.set_figheight(6.5)
+#fig9.set_figwidth(9)
+#plt.clf()
+#plt.plot(t_int, O2_conc, 'b-')
+#plt.xlabel('Time (Years)')
+#plt.ylabel('$O_{2}$ Concentration (mol/kg $H_{2}O$)')
+#plt.xlim(2.5*10**7, 2.5000001*10**7)
 #plt.ylim(3.0*10**-14, 5.5*10**-14)
-plt.title(r"Total $O_{2}$ Concentration in the Ocean") #$\tau_d$ = %d Myr" %(t_up*10**-6)
-plt.legend(bbox_to_anchor=(1,1),prop={'size': 15})
-plt.subplots_adjust(left=0.12, right=0.9, top=0.8, bottom=0.15)
-plt.grid()
+#plt.title(r"Total $O_{2}$ Concentration in the Ocean") #$\tau_d$ = %d Myr" %(t_up*10**-6)
+#plt.legend(bbox_to_anchor=(1,1),prop={'size': 15})
+#plt.subplots_adjust(left=0.12, right=0.9, top=0.8, bottom=0.15)
+#plt.grid()
 #plt.savefig('IntegratedO2.png')
 
 
@@ -377,74 +392,186 @@ plt.grid()
 #Calculate steady state concentration for before & after 10&7 years
 t_SS = np.arange(0, 4.50001, 0.00001)*10**9
 t_SSplot = np.arange(-4.5, 0.00001, 0.00001)
+N_SS = len(t_SS)
 
-SS = np.zeros(len(t_SS))
-for i in range(0, len(t_SS)):
-    if t_SS[i]<=2*10**7:
-         SS[i] = (C*np.exp(-lambda_K*t_SS[i]))/B
-    else:
-         SS[i] = (A+C*np.exp(-lambda_K*t_SS[i]))/B
+SS = np.zeros([len(pH), N_SS])
+for i in range (0, len(pH)):
+    for j in range(0, N_SS):
+        if t_SS[j]<=2*10**7:
+             SS[i,j] = (C*np.exp(-lambda_K*t_SS[j]))/B[i]
+        else:
+             SS[i,j] = (A+C*np.exp(-lambda_K*t_SS[j]))/B[i]
 
+
+#Calculate sulfate from steady-state O2       
+dSO4_dt = k2*H2S*SS
+SO4_conc = np.zeros([len(pH), N_SS])
+
+for i in range (0, len(pH)):
+    for j in range (0, N_SS):
+        timestep = t_SS[1] - t_SS[0]
+        if j == 0:
+            SO4_conc[i,j] = 0.0
+        else:
+            SO4_conc[i,j] = dSO4_dt[i,j]*timestep + SO4_conc[i,j-1] 
+        
+        
+#Calculate FeOH3 from steady-state O2
+dFeO_dt = np.zeros([len(pH), N_SS])
+FeO_conc = np.zeros([len(pH), N_SS])
+
+for i in range (0, len(pH)):
+    dFeO_dt[i] = k1*Fe2*(OH[i]**2)*SS[i,:]
+    for j in range (0, N_SS):
+        timestep = t_SS[1] - t_SS[0]
+        if j == 0:
+            FeO_conc[i,j] = 0.0
+        else:
+            FeO_conc[i,j] = dFeO_dt[i,j]*timestep + FeO_conc[i,j-1] 
+                
 fig10 = plt.figure(10)
 fig10.set_figheight(6.5)
-fig10.set_figwidth(9)
+fig10.set_figwidth(10)
 plt.clf()
-plt.plot(t_SSplot, SS*10**3, 'b-')
+#plt.plot(t_SSplot, np.log10(SS[0]*10**3), label = 'pH = 8')
+#plt.plot(t_SSplot, np.log10(SS[1]*10**3), label = 'pH = 9')
+#plt.plot(t_SSplot, np.log10(SS[2]*10**3), label = 'pH = 10')
+#plt.plot(t_SSplot, np.log10(SS[3]*10**3), label = 'pH = 11')
 plt.xlabel('Time from Current Epoch (Gyr)')
 plt.ylabel('Concentration (mmol/kg $H_{2}O$)')
 plt.xlim(-4.5, 0.0)
 #plt.ylim(2.0*10**-14, 5.5*10**-14)
-plt.title(r"Steady State $O_{2}$ Concentration in the Ocean") #$\tau_d$ = %d Myr" %(t_up*10**-6)
-plt.subplots_adjust(left=0.13, right=0.9, top=0.8, bottom=0.15)
+plt.title(r"Steady State $O_2$ Concentration in the Ocean") #$\tau_d$ = %d Myr" %(t_up*10**-6)
+plt.legend(bbox_to_anchor=(0.9,1),prop={'size': 15})
+plt.subplots_adjust(left=0.16, right=0.9, top=0.8, bottom=0.15)
 plt.grid()
-plt.savefig('SteadyState_O2.png')  
+#plt.savefig('O2Concentrations.png')  
 
-#Calculate sulfate from steady-state O2       
-dSO4_dt = k2*H2S*SS
-N = len(t_SS)
-SO4_conc = np.zeros(N)
-for i in range (0, N):
-    timestep = t_SS[1] - t_SS[0]
-    if i == 0:
-        SO4_conc[i] = 0.0
-    else:
-        SO4_conc[i] = dSO4_dt[i]*timestep + SO4_conc[i-1] 
-    
-#numerically integrate
-
-fig11 = plt.figure(11)
+fig11 = plt.figure(10)
 fig11.set_figheight(6.5)
-fig11.set_figwidth(9)
+fig11.set_figwidth(10)
 plt.clf()
-plt.plot(t_SSplot, SO4_conc*10**3, 'b-')
+plt.plot(t_SSplot, SO4_conc[0]*10**3, label = 'pH = 8')
+plt.plot(t_SSplot, SO4_conc[1]*10**3, label = 'pH = 9')
+plt.plot(t_SSplot, SO4_conc[2]*10**3, label = 'pH = 10')
+plt.plot(t_SSplot, SO4_conc[3]*10**3, label = 'pH = 11')
 plt.xlabel('Time from Current Epoch (Gyr)')
 plt.ylabel('Concentration (mmol/kg $H_{2}O$)')
 plt.xlim(-4.5, 0.0)
-plt.ylim(0.0, 2.0)
-plt.title(r"$SO_{4}^{2-}$ Concentration in the Ocean") #$\tau_d$ = %d Myr" %(t_up*10**-6)
-plt.subplots_adjust(left=0.16, right=0.94, top=0.8, bottom=0.15)
+#plt.ylim(2.0*10**-14, 5.5*10**-14)
+plt.title(r"Steady State Sulfate Concentration in the Ocean") #$\tau_d$ = %d Myr" %(t_up*10**-6)
+plt.legend(bbox_to_anchor=(0.3,1),prop={'size': 15})
+plt.subplots_adjust(left=0.16, right=0.9, top=0.8, bottom=0.15)
 plt.grid()
-plt.savefig('SulfateConcentration.png')  
+#plt.savefig('SulfateConcentrations.png')  
+
+fig12 = plt.figure(12)
+fig12.set_figheight(6.5)
+fig12.set_figwidth(10)
+plt.clf()
+plt.plot(t_SSplot, FeO_conc[0]*10**3, label = 'pH = 8')
+plt.plot(t_SSplot, FeO_conc[1]*10**3, label = 'pH = 9')
+plt.plot(t_SSplot, FeO_conc[2]*10**3, label = 'pH = 10')
+plt.plot(t_SSplot, FeO_conc[3]*10**3, label = 'pH = 11')
+plt.xlabel('Time from Current Epoch (Gyr)')
+plt.ylabel('Concentration (mmol/kg $H_{2}O$)')
+plt.xlim(-4.5, 0.0)
+#plt.ylim(2.0*10**-14, 5.5*10**-14)
+plt.title(r"Steady State Geothite Concentration in the Ocean") #$\tau_d$ = %d Myr" %(t_up*10**-6)
+plt.legend(bbox_to_anchor=(0.3,1),prop={'size': 15})
+plt.subplots_adjust(left=0.16, right=0.9, top=0.8, bottom=0.15)
+plt.grid()
+#plt.savefig('GeothiteConcentrations.png')  
+
+fig13 = plt.figure(13)
+fig13.set_figheight(6.5)
+fig13.set_figwidth(10)
+plt.clf()
+plt.plot(t_SSplot, np.log10(SS[0]*10**3), label = '$O_2$')
+plt.plot(t_SSplot[1:], np.log10(SO4_conc[0,1:]*10**3), label = '$SO_4^{2-}$')
+plt.plot(t_SSplot[1:], np.log10(FeO_conc[0,1:]*10**3), label = 'FeOOH')
+plt.xlabel('Time from Current Epoch (Gyr)')
+plt.ylabel(r'Concentration [Log($\frac{mmol}{kg H_{2}O}$)]')
+plt.xlim(-4.5, 0.0)
+#plt.ylim(2.0*10**-14, 5.5*10**-14)
+plt.title(r"Oxidant Concentrations at pH = 8") #$\tau_d$ = %d Myr" %(t_up*10**-6)
+plt.legend(bbox_to_anchor=(0.7,0.3),prop={'size': 15})
+plt.subplots_adjust(left=0.16, right=0.9, top=0.8, bottom=0.15)
+plt.grid()
+plt.savefig('OxidantspH8.png')  
+
+fig14 = plt.figure(14)
+fig14.set_figheight(6.5)
+fig14.set_figwidth(10)
+plt.clf()
+plt.plot(t_SSplot, np.log10(SS[1]*10**3), label = '$O_2$')
+plt.plot(t_SSplot[1:], np.log10(SO4_conc[1,1:]*10**3), label = '$SO_4^{2-}$')
+plt.plot(t_SSplot[1:], np.log10(FeO_conc[1,1:]*10**3), label = 'FeOOH')
+plt.xlabel('Time from Current Epoch (Gyr)')
+plt.ylabel(r'Concentration [Log($\frac{mmol}{kg H_{2}O}$)]')
+plt.xlim(-4.5, 0.0)
+#plt.ylim(2.0*10**-14, 5.5*10**-14)
+plt.legend(bbox_to_anchor=(0.7,0.3),prop={'size': 15})
+plt.subplots_adjust(left=0.16, right=0.9, top=0.8, bottom=0.15)
+plt.grid()
+plt.savefig('OxidantspH9.png')
+
+fig15 = plt.figure(15)
+fig15.set_figheight(6.5)
+fig15.set_figwidth(10)
+plt.clf()
+plt.plot(t_SSplot, np.log10(SS[2]*10**3), label = '$O_2$')
+plt.plot(t_SSplot[1:], np.log10(SO4_conc[2,1:]*10**3), label = '$SO_4^{2-}$')
+plt.plot(t_SSplot[1:], np.log10(FeO_conc[2,1:]*10**3), label = 'FeOOH')
+plt.xlabel('Time from Current Epoch (Gyr)')
+plt.ylabel(r'Concentration [Log($\frac{mmol}{kg H_{2}O}$)]')
+plt.xlim(-4.5, 0.0)
+#plt.ylim(2.0*10**-14, 5.5*10**-14)
+plt.title(r"Oxidant Concentrations at pH = 10") #$\tau_d$ = %d Myr" %(t_up*10**-6)
+plt.legend(bbox_to_anchor=(0.7,0.3),prop={'size': 15})
+plt.subplots_adjust(left=0.16, right=0.9, top=0.8, bottom=0.15)
+plt.grid()
+plt.savefig('OxidantspH10.png')
+
+fig16 = plt.figure(16)
+fig16.set_figheight(6.5)
+fig16.set_figwidth(10)
+plt.clf()
+plt.plot(t_SSplot, np.log10(SS[3]*10**3), label = '$O_2$')
+plt.plot(t_SSplot[1:], np.log10(SO4_conc[3,1:]*10**3), label = '$SO_4^{2-}$')
+plt.plot(t_SSplot[1:], np.log10(FeO_conc[3,1:]*10**3), label = 'FeOOH')
+plt.xlabel('Time from Current Epoch (Gyr)')
+plt.ylabel(r'Concentration [Log($\frac{mmol}{kg H_{2}O}$)]')
+plt.xlim(-4.5, 0.0)
+#plt.ylim(2.0*10**-14, 5.5*10**-14)
+plt.title(r"Oxidant Concentrations at pH = 11") #$\tau_d$ = %d Myr" %(t_up*10**-6)
+plt.legend(bbox_to_anchor=(0.7,0.3),prop={'size': 15})
+plt.subplots_adjust(left=0.16, right=0.9, top=0.8, bottom=0.15)
+plt.grid()
+plt.savefig('OxidantspH11.png')
+
 
 #To verify this, ignore sf for first 1.2 Gyr, then ignore K40 after that
 #For first 1.2 Gyr, O2 = O2_del 
-t_K40 = np.arange(0.0, 1.2, 0.00001) * 10**9
+#t_K40 = np.arange(0.0, 1.2, 0.00001) * 10**9
+#O2_K40 = (C/(B - lambda_K)) * (np.exp(-lambda_K*t_K40) - np.exp(-B*t_K40)) 
 
-O2_K40 = (C/(B - lambda_K)) * (np.exp(-lambda_K*t_K40) - np.exp(-B*t_K40)) 
-
-fig11 = plt.figure(11)
-fig11.set_figheight(6.5)
-fig11.set_figwidth(9)
-plt.clf()
-plt.plot(t_K40, O2_K40, 'b-')
-plt.xlabel('Time from Current Epoch (Gyr)')
-plt.ylabel('Concentration (mol/kg $H_{2}O$)')
-plt.xlim(0.0, 1.2 * 10**9)
+#fig11 = plt.figure(11)
+#fig11.set_figheight(6.5)
+#fig11.set_figwidth(9)
+#plt.clf()
+#plt.plot(t_K40, O2_K40, 'b-')
+#plt.xlabel('Time from Current Epoch (Gyr)')
+#plt.ylabel('Concentration (mol/kg $H_{2}O$)')
+#plt.xlim(0.0, 1.2 * 10**9)
 #plt.ylim(0.02, 0.055)
-plt.title(r"$O_{2}$ Concentration in the Ocean") #$\tau_d$ = %d Myr" %(t_up*10**-6)
-plt.subplots_adjust(left=0.16, right=0.94, top=0.8, bottom=0.15)
-plt.grid()
+#plt.title(r"$O_{2}$ Concentration in the Ocean") #$\tau_d$ = %d Myr" %(t_up*10**-6)
+#plt.subplots_adjust(left=0.16, right=0.94, top=0.8, bottom=0.15)
+#plt.grid()
 #plt.savefig('O2_1.2GYr.png') 
+
+
+
 
 #CORE#
 

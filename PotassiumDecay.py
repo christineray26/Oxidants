@@ -35,7 +35,7 @@ N = len(t)
 K_conc = 1.0 * 10**-3 #mol/kg H2O
 K40_frac = 1.17 * 10**-4
 K40_now = K_conc * K40_frac #mol K/kg H2O
-K40_conc = 0.00145 * K_conc ##need to ask chris why N_0's don't match
+#K40_conc = 0.00145 * K_conc ##need to ask chris why N_0's don't match
 
 K40_0 = (K40_now * M_ocean) * np.exp(lambda_K * 4.5*10**9) * N_A #mol/kg H2O * kg H2O * atoms/mol = atoms total
 K40 = K40_0 * np.exp(-lambda_K * t)
@@ -44,8 +44,8 @@ K40 = K40_0 * np.exp(-lambda_K * t)
 A = lambda_K * K40  # decays/yr
 
 #Calculate absorbed dose rate
-D_beta = A * E_beta #decays/yr * MeV/decay = MeV/yr
-D_gamma = A * E_gamma
+D_beta = A * E_beta * 10**6 #decays/yr * MeV/decay *eV/MeV = eV/yr
+D_gamma = A * E_gamma * 10**6
 
 #D_tot = D*M_ocean #eV/yr
 
@@ -133,6 +133,14 @@ rH2C, H2DC = conc(kH2C, K40, t, t_step)
 rO2, O2D = conc(kO2, K40, t, t_step)
 rH2O2, H2O2 = conc(kH2O2, K40, t, t_step)    
 
+#Write to a file
+headers = 'Rate H2        Total H2            Rate O2        Total O2          Rate H2O2      Total H2O2 \n'
+f = open('O2Potassium.txt', 'w')
+f.write(headers)
+for i in range (0,N): 
+	f.write(str(rH2[i]) + ', ' + str(H2D[i]) + ', ' + str(rO2[i]) + ', ' + str(O2D[i]) + ', ' + str(rH2O2[i]) + ', ' + str(H2O2[i])+ ' \n')
+f.close()
+
 #Plot O2, H2 & H2O2 production
 fig2 = plt.figure(2)
 fig2.set_figheight(6.5)
@@ -153,5 +161,26 @@ plt.legend(bbox_to_anchor=(0.25,1.0), prop={'size': 18})
 plt.savefig('PotassiumDecay_ChrisMethod.png')
 
 
+#Plot both methods
+fig2 = plt.figure(3)
+fig2.set_figheight(6.5)
+fig2.set_figwidth(11)
+plt.clf()
+plt.grid()
+plt.plot(t_plot, O2D, '-', color = 'royalblue', label = "$O_{2}$, Draganic et al. (1991)")
+plt.plot(t_plot, H2D, '-', color = 'darkorange', label = "$H_{2}$, Draganic et al. (1991)")
+#plt.plot(t_plot, H2DC, label = "$H_{2}$ coupled")
+plt.plot(t_plot, H2O2, color = 'darkturquoise',  label = "$H_{2}O_{2}$, Draganic et al. (1991)")
+plt.plot(t_plot, H2, '--', color = 'darkorange', label = "$H_{2}$, Bouquet et al. (2017)")
+plt.plot(t_plot, O2, '--', color = 'royalblue', label = "$O_{2}$, Bouquet et al. (2017)")
+plt.xlim(-4.5, 0)
+plt.ylim(0.0, 1.0*10**17)
+plt.xlabel('Time from current epoch (Gyr)')
+plt.ylabel('Cumulative Production (mol)')
+plt.title('Species Produced by $^{40}$K Decay in the Ocean')
+plt.subplots_adjust(left=0.12, right=0.93, top=0.8, bottom=0.15)
+plt.legend(bbox_to_anchor=(0.36,1.0), prop={'size': 12.5})
+#plt.legend()
+plt.savefig('PotassiumDecay_BothMethods.png')
 
  	

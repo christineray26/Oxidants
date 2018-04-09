@@ -11,14 +11,23 @@ pH = np.array([9.0, 11.0])
 H = 10**(-pH)
 H2O = 1.0
 
-H2 = np.array([1 * 10**-4,  2 * 10**-7]) #at pH 9 and pH 11
-O2 = np.array([10 ** -14, 10**-14])
-SO4 = np.array([2 * 10**-3, 2 * 10**-3]) 
-H2S = np.array([1.4 * 10**-7,  2 * 10**-10])
 
-CO2 = np.array([7 * 10**-5,  1 * 10**-7])
+#Reductants
+H2 = np.array([1 * 10**-4,  2 * 10**-7]) #at pH 9 and pH 11
+H2S = np.array([1.4 * 10**-7,  2 * 10**-10])
+HS = np.array([10**-5.4,  10**-5.4])
 CH4 = np.array([3 * 10**-5,  4 * 10**-8])
-#H2S = CH4
+Fe2 = np.array([10**-8,  10**-8])
+FeS2 = np.array([1.0, 1.0])
+
+
+#Oxidants
+O2 = np.array([9.3 ** -15, 2.4**-17])
+SO4 = np.array([1.7 * 10**-3, 4.5 * 10**-6]) 
+CO2 = np.array([7 * 10**-5,  1 * 10**-7])
+#FeOOH = np.array([5.5 * 10**-4,  1.4 * 10**-2])
+FeOOH = np.array([1.0, 1.0])
+
 
 
 #Reactions
@@ -30,35 +39,52 @@ K1 = 37.44
 #Q1 = np.log10((CH4*(H2O**2))/((H2**4)*CO2))
 Q1 = np.log10(CH4) + 2*np.log10(H2O) - np.log10(CO2) - 4*np.log10(H2)
 
-#2 anaerobic oxidation of methane
-r2 = 'CH4 + SO4 + 2H+ = CO2 + H2S + 2H2O     '
-K2 = 19.79
-#Q2 = np.log10((CO2*H2S*(H2O**2))/(CH4*SO4*(H**2)))
-Q2 = np.log10(CO2) + np.log10(H2S) + 2*np.log10(H2O) - np.log10(CH4) - np.log10(SO4) - 2*np.log10(H)
+#2 sulfide oxidation
+r2 = 'H2S + 2O2 = SO4 + 2H2O                 '
+K2 = 234.754
+#Q2 = np.log10((SO4*(H2O**2))/((O2**2)*H2S))
+Q2 = 2*np.log10(H2O) + np.log10(SO4) - 2*np.log10(O2) - np.log10(H2S)
 
-#3 sulfate reduction
-r3 = '4H2 + SO4 + 2H+ = H2S + 4H2O           '
-K3 = 46.347
-#Q3 = np.log10((H2S*(H2O**4))/((H2**4)*SO4*(H**2)))
-Q3 = np.log10(H2S) + 4*np.log10(H2O) - np.log10(SO4) - 2*np.log10(H) - 4*np.log10(H2)
+#3 sulfide oxidation
+r3 = 'HS- + 2O2 = SO4 + H+'
+K3 = 
+Q3 = np.log10(SO4) + np.log10(H) - 2*np.log10(O2) - np.log10(HS)
 
-#4 hydrogen oxidation
-r4 = '2H2 + O2 = 2H2O                        '
-K4 = 100.957
-#Q4 = np.log10((H2O**2)/((H2**2)*O2))
-Q4 = 2*np.log10(H2O) - 2*np.log10(H2) - np.log10(O2)
+#4 iron sulfide oxidation
+r4 = 'FeS2 + 3.5O2 + H2O = 2SO4 + Fe(II) + 2H+'
+K4 = 
+Q4 = 2*np.log10(SO4) + np.log10(Fe2) + 2*np.log10(H) - np.log10(H2O) - 3.5*np.log10(O2) - np.log10(FeS2)
 
-#5 methane oxidation
-r5 = 'CH4 + 2O2 = CO2 + 2H2O                 '
-K5 = 164.473
-#Q5 = np.log10((CO2*(H2O**2))/((O2**2)*CH4))
-Q5 = np.log10(CO2) + 2*np.log10(H2O) - np.log10(CH4) - 2*np.log10(O2)
+#5 hydrogen oxidation
+r5 = '2H2 + O2 = 2H2O                        '
+K5 = 100.957
+#Q5 = np.log10((H2O**2)/((H2**2)*O2))
+Q5 = 2*np.log10(H2O) - 2*np.log10(H2) - np.log10(O2)
 
-#6 sulfide oxidation
-r6 = 'H2S + 2O2 = SO4 + 2H2O                 '
-K6 = 234.754
-#Q6 = np.log10((SO4*(H2O**2))/((O2**2)*H2S))
-Q6 = 2*np.log10(H2O) + np.log10(SO4) - 2*np.log10(O2) - np.log10(H2S)
+#6 sulfate reduction
+r6 = '4H2 + SO4 + 2H+ = H2S + 4H2O           '
+K6 = 46.347
+#Q6 = np.log10((H2S*(H2O**4))/((H2**4)*SO4*(H**2)))
+Q6 = np.log10(H2S) + 4*np.log10(H2O) - np.log10(SO4) - 2*np.log10(H) - 4*np.log10(H2)
+
+#7 sulfate reduction
+r7 = '4H2 + SO4 + H+ = HS- + 4H2O'
+K7 = 
+Q7 = np.log10(HS) + 4*np.log10(H2O)  - np.log10(H) - np.log10(SO4) - 4*np.log10(H2)
+
+#8 anaerobic oxidation of methane
+r8 = 'CH4 + SO4 + 2H+ = CO2 + H2S + 2H2O     '
+K8 = 19.79
+#Q8 = np.log10((CO2*H2S*(H2O**2))/(CH4*SO4*(H**2)))
+Q8 = np.log10(CO2) + np.log10(H2S) + 2*np.log10(H2O) - np.log10(CH4) - np.log10(SO4) - 2*np.log10(H)
+
+#9 aerobic oxidation of methane
+r9 = 'CH4 + 2O2 = CO2 + 2H2O                 '
+K9 = 164.473
+#Q9 = np.log10((CO2*(H2O**2))/((O2**2)*CH4))
+Q9 = np.log10(CO2) + 2*np.log10(H2O) - np.log10(CH4) - 2*np.log10(O2)
+
+#10 reduction of ferric iron
 
 
 rxns = np.array([r1, r2, r3, r4, r5, r6])
